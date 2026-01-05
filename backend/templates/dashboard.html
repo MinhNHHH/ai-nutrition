@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Behavior Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <header style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1>User Behavior Analytics</h1>
+                <p style="color: var(--text-muted)">Real-time insights into AI interactions and user nutrition tracking
+                </p>
+            </div>
+            <a href="/dashboard/logs"
+                style="display: inline-block; padding: 0.75rem 1.25rem; background: rgba(99, 102, 241, 0.1); color: var(--primary); border: 1px solid var(--primary); border-radius: 0.5rem; text-decoration: none; font-weight: 600; transition: all 0.2s;">
+                View Detailed Logs →
+            </a>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Users</div>
+                <div id="stat-users" class="stat-value">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total AI Requests</div>
+                <div id="stat-requests" class="stat-value">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Tokens Consumed</div>
+                <div id="stat-tokens" class="stat-value">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Meals Logged</div>
+                <div id="stat-meals" class="stat-value">-</div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>Request Volume & Token Usage</h3>
+                <div class="chart-container">
+                    <canvas id="requestsChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <h3>Model Distribution</h3>
+                <div class="chart-container">
+                    <canvas id="modelsChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <h3>Nutrition Trends (Calories)</h3>
+                <div class="chart-container">
+                    <canvas id="nutritionChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <h3>Macro-nutrient Balance</h3>
+                <div class="chart-container">
+                    <canvas id="macrosChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchData() {
+            const response = await fetch('/dashboard/stats');
+            const data = await response.json();
+            return data;
+        }
+
+        function initCharts(data) {
+            // Summary Stats
+            document.getElementById('stat-users').textContent = data.summary.total_users;
+            document.getElementById('stat-requests').textContent = data.summary.total_requests;
+            document.getElementById('stat-tokens').textContent = data.summary.total_tokens.toLocaleString();
+            document.getElementById('stat-meals').textContent = data.summary.total_meals;
+
+            // Request Volume & Tokens Chart
+            new Chart(document.getElementById('requestsChart'), {
+                type: 'line',
+                data: {
+                    labels: data.ai_requests.map(r => r.date),
+                    datasets: [
+                        {
+                            label: 'Requests',
+                            data: data.ai_requests.map(r => r.count),
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Tokens (k)',
+                            data: data.ai_requests.map(r => r.tokens / 1000),
+                            borderColor: '#10b981',
+                            yAxisID: 'y1',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true },
+                        y1: { position: 'right', beginAtZero: true }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#f8fafc' } }
+                    }
+                }
+            });
+
+            // Model Distribution Chart
+            new Chart(document.getElementById('modelsChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: data.models.map(m => m.model),
+                    datasets: [{
+                        data: data.models.map(m => m.count),
+                        backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#f8fafc' } }
+                    }
+                }
+            });
+
+            // Nutrition Trends Chart
+            new Chart(document.getElementById('nutritionChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.nutrition.map(n => n.date),
+                    datasets: [{
+                        label: 'Calories',
+                        data: data.nutrition.map(n => n.calories),
+                        backgroundColor: '#f59e0b'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#f8fafc' } }
+                    }
+                }
+            });
+
+            // Macros Chart
+            const latestNutrition = data.nutrition[data.nutrition.length - 1] || { protein: 0, carbs: 0, fat: 0 };
+            new Chart(document.getElementById('macrosChart'), {
+                type: 'pie',
+                data: {
+                    labels: ['Protein', 'Carbs', 'Fat'],
+                    datasets: [{
+                        data: [latestNutrition.protein, latestNutrition.carbs, latestNutrition.fat],
+                        backgroundColor: ['#10b981', '#6366f1', '#ec4899']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#f8fafc' } }
+                    }
+                }
+            });
+        }
+
+        fetchData().then(initCharts);
+    </script>
+</body>
+
+</html>
