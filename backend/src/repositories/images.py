@@ -8,7 +8,6 @@ class ImageRepository:
     
     def insert(self, image: Image):
         try:
-            print(self.db)
             self.db.add(image)
             self.db.commit()
             return image

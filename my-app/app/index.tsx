@@ -3,6 +3,7 @@ import * as Device from 'expo-device';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
+import { LogOut, User as UserIcon } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
     ActivityIndicator,
@@ -13,19 +14,20 @@ import {
     SafeAreaView,
     StatusBar,
     Text,
-    View,
-    TouchableOpacity
+    TouchableOpacity,
+    View
 } from 'react-native';
+import { authService } from '../src/api/authService';
 import { useAnalyzeMeal } from '../src/hooks/useAnalyzeMeal';
 import { useAuthStore } from '../src/store/authStore';
-import { authService } from '../src/api/authService';
-import { LogOut, User as UserIcon } from 'lucide-react-native';
+import { useMealStore } from '../src/store/mealStore';
 
 export default function ScanScreen() {
     const [image, setImage] = useState<string | null>(null);
     const router = useRouter();
     const { mutate: analyze, isPending: isAnalyzing } = useAnalyzeMeal();
     const { logout, user } = useAuthStore();
+    const clearMeal = useMealStore((state) => state.clearMeal);
 
     const handleLogout = async () => {
         Alert.alert(
@@ -37,11 +39,14 @@ export default function ScanScreen() {
                     text: "Logout",
                     onPress: async () => {
                         try {
-                            // Notify backend
-                            await authService.logout();
-                        } finally {
-                            // Always clear local state even if backend call fails
+                            // 1. Clear local state first to trigger background redirect
+                            clearMeal();
                             logout();
+
+                            // 2. Perform external logout operations
+                            await authService.logout();
+                        } catch (error) {
+                            console.error('Logout failed:', error);
                         }
                     },
                     style: "destructive"

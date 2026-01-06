@@ -3,7 +3,6 @@ import * as WebBrowser from 'expo-web-browser';
 import { AuthResponse, User } from '../types/auth';
 import { apiClient } from './client';
 
-// Ensure the browser can return to the app
 WebBrowser.maybeCompleteAuthSession();
 
 export const authService = {
@@ -14,9 +13,11 @@ export const authService = {
         const baseURL = apiClient.defaults.baseURL;
         const authUrl = `${baseURL}/auth/login`;
 
-        // Open the auth session in the system browser
-        // const result = await WebBrowser.openAuthSessionAsync(authUrl, 'localhost:7777/auth');
-        const result = await WebBrowser.openAuthSessionAsync(authUrl, 'myapp://auth');
+        // Open the auth session in the system browser with preferEphemeralSession: true
+        // This ensures cookies/cache are not persisted, forcing fresh login next time.
+        const result = await WebBrowser.openAuthSessionAsync(authUrl, 'myapp://auth', {
+            preferEphemeralSession: true,
+        });
 
         if (result.type === 'success' && result.url) {
             // Parse the data from the deep link
@@ -34,16 +35,12 @@ export const authService = {
         throw new Error('Login cancelled or failed');
     },
 
-    /**
-     * Terminate session
-     */
     logout: async (): Promise<void> => {
-        await apiClient.post('/auth/logout').catch(() => { });
+        await WebBrowser.openBrowserAsync('https://accounts.google.com/Logout', {
+            showInRecents: false,
+        });
     },
 
-    /**
-     * Get profile for authenticated user
-     */
     getCurrentUser: async (): Promise<User> => {
         const response = await apiClient.get('/auth/me');
         return response.data;

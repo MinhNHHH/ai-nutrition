@@ -53,7 +53,6 @@ async def auth_callback(request: Request, db: Session = Depends(get_db)):
         email = user_info.get('email')
         name = user_info.get('name')
         picture = user_info.get('picture')
-        
         # Upsert user in repository
         user_repo = UserRepository(db)
         user = user_repo.upsert_google_user(
@@ -105,5 +104,5 @@ async def get_me(current_user: User = Depends(get_current_user)):
 
 
 @router.post('/logout')
-async def logout(current_user: User = Depends(get_current_user)):
-    return {"message": f"Successfully logged out {current_user.email}"}
+async def logout():
+    return {"message": "Successfully logged out"}

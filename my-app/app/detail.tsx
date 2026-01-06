@@ -2,10 +2,10 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
+  ActivityIndicator,
   Dimensions,
   Image,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   Text,
@@ -76,26 +76,13 @@ const IngredientItem = ({ dish }: { dish: Dish }) => (
 export default function DetailScreen() {
   const router = useRouter();
   const currentMeal = useMealStore((state) => state.currentMeal);
-
-  if (!currentMeal) {
-    return (
-      <SafeAreaView className="flex-1 bg-white items-center justify-center p-6">
-        <Text className="text-xl font-bold text-gray-900 mb-4">No analysis data found</Text>
-        <Pressable
-          onPress={() => router.replace('/')}
-          className="bg-gray-900 px-6 py-3 rounded-2xl"
-        >
-          <Text className="text-white font-bold">Go Back to Scan</Text>
-        </Pressable>
-      </SafeAreaView>
-    );
-  }
-
-  const { total_nutrition, dishes, health_score, meal_name } = currentMeal;
   const mealImageUri = useMealStore((state) => state.mealImageUri);
 
   const displayHealthScore = React.useMemo(() => {
-    if (health_score) return health_score;
+    if (!currentMeal) return 0;
+    const { health_score, dishes } = currentMeal;
+
+    if (health_score !== undefined && health_score !== null) return health_score;
     if (!dishes || dishes.length === 0) return 0;
 
     const total = dishes.reduce((acc, dish) => {
@@ -106,10 +93,22 @@ export default function DetailScreen() {
     }, 0);
 
     return Math.round(total / dishes.length);
-  }, [health_score, dishes]);
+  }, [currentMeal]);
+
+  // If there's no meal data, RootLayout will handle the redirect if not authenticated.
+  // If we are authenticated but have no meal, we just show a placeholder to avoid crashes.
+  if (!currentMeal) {
+    return (
+      <View className="flex-1 bg-white items-center justify-center p-6">
+        <ActivityIndicator size="large" color="#4F46E5" />
+      </View>
+    );
+  }
+
+  const { total_nutrition, dishes, meal_name } = currentMeal;
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8F9FA]">
+    <View className="flex-1 bg-[#F8F9FA]">
       <StatusBar barStyle="dark-content" />
 
       {/* Header */}
@@ -201,6 +200,6 @@ export default function DetailScreen() {
           <View className="h-20" />
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

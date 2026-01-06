@@ -7,12 +7,12 @@ export interface User {
 
 export interface AuthResponse {
     user: User;
-    access_token: string;
+    token: string;
 }
 
 export interface AuthState {
     user: User | null;
-    access_token: string | null;
+    token: string | null;
     isAuthenticated: boolean;
     isLoading: boolean;
     error: string | null;

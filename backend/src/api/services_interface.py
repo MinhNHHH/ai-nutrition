@@ -18,7 +18,6 @@ from core.LLM.client import LLMClient
 class ServiceInterface:
     def __init__(self, db: Session):
         self.db = db
-        print("sdasdasd", self.db)
         self.minio_client = MinioClient()
         self.llm_client = LLMClient()
         self.image_service = ImageService(image_repository=ImageRepository(db))

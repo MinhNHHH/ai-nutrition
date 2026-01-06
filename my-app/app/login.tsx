@@ -8,25 +8,28 @@ import { useAuthStore } from '../src/store/authStore';
 
 export default function LoginScreen() {
     const router = useRouter();
-    const { setAuth, setLoading, setError, isLoading, error } = useAuthStore();
+    const { setAuth, setError, error } = useAuthStore();
+    const [isLoading, setIsLoading] = React.useState(false);
 
     const handleGoogleLogin = async () => {
         try {
-            setLoading(true);
+            setIsLoading(true);
             setError(null);
 
             // This will open the system browser and wait for the app redirect
             const data = await authService.googleLogin();
-
-            setAuth(data.user, data.access_token);
+            if (!data.token) {
+                throw new Error('No access token received from login');
+            }
+            setAuth(data.user, data.token);
+            // No need to setIsLoading(false) if we are redirecting away
             router.replace('/' as any);
         } catch (err: any) {
             // Check if it was a user cancellation
             if (err.message !== 'Login cancelled or failed') {
                 setError(err.message || 'Authentication failed');
             }
-        } finally {
-            setLoading(false);
+            setIsLoading(false);
         }
     };
 

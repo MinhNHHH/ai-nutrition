@@ -14,8 +14,8 @@ export const nutritionService = {
             name: 'meal.jpg',
         } as any);
 
-        // Add access_token from the auth store (back-end return)
-        const token = useAuthStore.getState().access_token;
+        // Add token from the auth store
+        const token = useAuthStore.getState().token;
         if (token) {
             formData.append('access_token', token);
         }
